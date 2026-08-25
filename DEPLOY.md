@@ -4,7 +4,7 @@
 
 ## Vercel 部署（最方便）
 
-项目已经包含 Vercel 可识别的 Express 根入口 `app.ts`。Vercel 构建时，Vite 会把前端输出到 `public`，API 与页面使用同一个域名。
+项目已经包含标准 Vercel 函数入口 `api/index.ts` 和 `vercel.json`。Vite 前端输出到 `dist`，所有 `/api/*` 请求会转发给 Express，API 与页面使用同一个域名。
 
 1. 在 Vercel 选择 **Add New → Project**，导入 GitHub 仓库 `yinyangcat12/game-agent`。
 2. 保持以下设置：
