@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: atlas-play
+    runtime: node
+    plan: free
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm build
+    startCommand: pnpm start
+    healthCheckPath: /healthz
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_BASE_URL
+        sync: false
+      - key: OPENAI_MODEL
+        value: gpt-5.6-sol
+      - key: OPENAI_WEB_SEARCH_TOOL
+        value: web_search
+      - key: OPENAI_TIMEOUT_MS
+        value: "300000"
