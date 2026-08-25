@@ -11,6 +11,7 @@ import { resolveGameCover } from "./cover.js";
 
 const app = express();
 const port = Number(process.env.PORT || 8787);
+const isVercel = process.env.VERCEL === "1";
 const here = path.dirname(fileURLToPath(import.meta.url));
 const jobTtlMs = 20 * 60 * 1000;
 
@@ -32,7 +33,17 @@ function researchErrorMessage(error: unknown) {
   return "联网模型请求失败，请检查 API Key、模型权限、请求地址和网络连接后重试。";
 }
 
-function enqueueResearch(res: express.Response, task: () => Promise<unknown>) {
+async function enqueueResearch(res: express.Response, task: () => Promise<unknown>) {
+  // Polling cannot rely on in-memory state across Vercel Function instances.
+  // Complete research in the original request there; the client supports both modes.
+  if (isVercel) {
+    try {
+      return res.json(await task());
+    } catch (error) {
+      console.error("Vercel research request failed", error);
+      return res.status(502).json({ error: researchErrorMessage(error) });
+    }
+  }
   const jobId = randomUUID();
   const now = Date.now();
   researchJobs.set(jobId, { status: "queued", createdAt: now, updatedAt: now });
@@ -167,9 +178,13 @@ app.post("/api/guide", async (req, res) => {
 });
 
 const dist = path.resolve(here, "../dist");
-app.use(express.static(dist));
-app.use((_req, res) => res.sendFile(path.join(dist, "index.html"), (error) => {
-  if (error) res.status(404).json({ error: "Atlas Play server is running." });
-}));
-const host = process.env.HOST || "0.0.0.0";
-app.listen(port, host, () => console.log(`Atlas Play server listening on ${host}:${port}`));
+if (!isVercel) {
+  app.use(express.static(dist));
+  app.use((_req, res) => res.sendFile(path.join(dist, "index.html"), (error) => {
+    if (error) res.status(404).json({ error: "Atlas Play server is running." });
+  }));
+  const host = process.env.HOST || "0.0.0.0";
+  app.listen(port, host, () => console.log(`Atlas Play server listening on ${host}:${port}`));
+}
+
+export default app;
